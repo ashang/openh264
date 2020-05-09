@@ -45,6 +45,7 @@ CDownsampling::CDownsampling (int32_t iCpuFlag) {
   m_eMethod   = METHOD_DOWNSAMPLE;
   WelsMemset (&m_pfDownsample, 0, sizeof (m_pfDownsample));
   InitDownsampleFuncs (m_pfDownsample, m_iCPUFlag);
+  WelsMemset(m_pSampleBuffer,0,sizeof(m_pSampleBuffer));
   m_bNoSampleBuffer = AllocateSampleBuffer();
 }
 
@@ -72,8 +73,11 @@ FREE_RET:
 void CDownsampling::FreeSampleBuffer() {
   for (int32_t i = 0; i < 2; i++) {
     WelsFree (m_pSampleBuffer[i][0]);
+    m_pSampleBuffer[i][0] = NULL;
     WelsFree (m_pSampleBuffer[i][1]);
+    m_pSampleBuffer[i][1] = NULL;
     WelsFree (m_pSampleBuffer[i][2]);
+    m_pSampleBuffer[i][2] = NULL;
   }
 }
 
@@ -106,10 +110,12 @@ void CDownsampling::InitDownsampleFuncs (SDownsampleFuncs& sDownsampleFunc,  int
     sDownsampleFunc.pfQuarterDownsampler  = DyadicBilinearQuarterDownsampler_sse4;
     sDownsampleFunc.pfGeneralRatioChroma  = GeneralBilinearAccurateDownsamplerWrap_sse41;
   }
+#ifdef HAVE_AVX2
   if (iCpuFlag & WELS_CPU_AVX2) {
     sDownsampleFunc.pfGeneralRatioChroma = GeneralBilinearAccurateDownsamplerWrap_avx2;
     sDownsampleFunc.pfGeneralRatioLuma   = GeneralBilinearFastDownsamplerWrap_avx2;
   }
+#endif
 #endif//X86_ASM
 
 #if defined(HAVE_NEON)

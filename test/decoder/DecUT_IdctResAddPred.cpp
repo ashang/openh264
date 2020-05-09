@@ -53,12 +53,14 @@ void SetNonZeroCount_ref (int8_t* pNonZeroCount) {
 }
 
 #if defined(X86_ASM)
+#if defined(HAVE_AVX2)
 void IdctFourResAddPred_ref (uint8_t* pPred, int32_t iStride, int16_t* pRs) {
   IdctResAddPred_ref (pPred + 0 * iStride + 0, iStride, pRs + 0 * 16);
   IdctResAddPred_ref (pPred + 0 * iStride + 4, iStride, pRs + 1 * 16);
   IdctResAddPred_ref (pPred + 4 * iStride + 0, iStride, pRs + 2 * 16);
   IdctResAddPred_ref (pPred + 4 * iStride + 4, iStride, pRs + 3 * 16);
 }
+#endif
 #endif
 
 } // anon ns
@@ -138,8 +140,10 @@ GENERATE_IDCTRESADDPRED (IdctResAddPred_c, 0)
 #if defined(X86_ASM)
 GENERATE_IDCTRESADDPRED (IdctResAddPred_mmx, WELS_CPU_MMXEXT)
 GENERATE_IDCTRESADDPRED (IdctResAddPred_sse2, WELS_CPU_SSE2)
+#if defined(HAVE_AVX2)
 GENERATE_IDCTRESADDPRED (IdctResAddPred_avx2, WELS_CPU_AVX2)
 GENERATE_IDCTFOURRESADDPRED (IdctFourResAddPred_avx2, WELS_CPU_AVX2)
+#endif
 #endif
 
 #if defined(HAVE_NEON)
@@ -148,6 +152,10 @@ GENERATE_IDCTRESADDPRED (IdctResAddPred_neon, WELS_CPU_NEON)
 
 #if defined(HAVE_NEON_AARCH64)
 GENERATE_IDCTRESADDPRED (IdctResAddPred_AArch64_neon, WELS_CPU_NEON)
+#endif
+
+#if defined(HAVE_MMI)
+GENERATE_IDCTRESADDPRED (IdctResAddPred_mmi, WELS_CPU_MMI)
 #endif
 
 #define GENERATE_SETNONZEROCOUNT(method, flag) \

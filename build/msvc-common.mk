@@ -12,6 +12,10 @@ ifeq ($(ASM_ARCH), arm)
 CCAS = gas-preprocessor.pl -as-type armasm -force-thumb -- armasm
 CCASFLAGS = -nologo -DHAVE_NEON -ignore 4509
 endif
+ifeq ($(ASM_ARCH), arm64)
+CCAS = gas-preprocessor.pl -as-type armasm -arch aarch64 -- armasm64
+CCASFLAGS = -nologo -DHAVE_NEON_AARCH64
+endif
 
 CC=cl
 CXX=cl
@@ -37,7 +41,8 @@ EXEEXT=.exe
 OBJ=obj
 SHAREDLIB_DIR = $(PREFIX)/bin
 SHAREDLIBSUFFIX=dll
-SHAREDLIBSUFFIXVER=$(SHAREDLIBSUFFIX)
+SHAREDLIBSUFFIXFULLVER=$(SHAREDLIBSUFFIX)
+SHAREDLIBSUFFIXMAJORVER=$(SHAREDLIBSUFFIX)
 SHARED=-LD
 EXTRA_LIBRARY=$(PROJECT_NAME)_dll.lib
 LDFLAGS += -link

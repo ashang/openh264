@@ -46,38 +46,39 @@ CWelsThread::CWelsThread() :
   m_hThread (0),
   m_bRunning (false),
   m_bEndFlag (false) {
-  WELS_THREAD_ERROR_CODE rc = WelsEventOpen (&m_hEvent);
 
-  if (WELS_THREAD_ERROR_OK != rc) {
-    m_hEvent = NULL;
-  }
+  WelsEventOpen (&m_hEvent);
+  WelsMutexInit(&m_hMutex);
+  m_iConVar = 1;
 }
 
 CWelsThread::~CWelsThread() {
   Kill();
   WelsEventClose (&m_hEvent);
-  m_hEvent = NULL;
+  WelsMutexDestroy(&m_hMutex);
 }
 
 void CWelsThread::Thread() {
   while (true) {
-    WelsEventWait (&m_hEvent);
+    WelsEventWait (&m_hEvent,&m_hMutex,m_iConVar);
 
     if (GetEndFlag()) {
       break;
     }
 
-    ExecuteTask();
+    m_iConVar = 1;
+    ExecuteTask();//in ExecuteTask there will be OnTaskStop which opens the potential new Signaling of next run, so the setting of m_iConVar = 1 should be before ExecuteTask()
   }
 
   SetRunning (false);
 }
 
 WELS_THREAD_ERROR_CODE CWelsThread::Start() {
+#ifndef __APPLE__
   if (NULL == m_hEvent) {
     return WELS_THREAD_ERROR_GENERAL;
   }
-
+#endif
   if (GetRunning()) {
     return WELS_THREAD_ERROR_OK;
   }
@@ -105,7 +106,7 @@ void CWelsThread::Kill() {
 
   SetEndFlag (true);
 
-  WelsEventSignal (&m_hEvent);
+  WelsEventSignal (&m_hEvent,&m_hMutex,&m_iConVar);
   WelsThreadJoin (m_hThread);
   return;
 }

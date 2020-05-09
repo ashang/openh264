@@ -258,13 +258,18 @@ uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
 
 /* Generic arm/linux cpu feature detection */
 uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
+  int flags = 0;
   FILE* f = fopen ("/proc/cpuinfo", "r");
 
-  if (!f)
-    return 0;
+#if defined(__chromeos__)
+  flags |= WELS_CPU_NEON;
+#endif
+
+  if (!f) {
+    return flags;
+  }
 
   char buf[200];
-  int flags = 0;
   while (fgets (buf, sizeof (buf), f)) {
     if (!strncmp (buf, "Features", strlen ("Features"))) {
       // The asimd and fp features are listed on 64 bit ARMv8 kernels
@@ -302,12 +307,53 @@ uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
          WELS_CPU_NEON;
 }
 
-#else /* Neither X86_ASM, HAVE_NEON nor HAVE_NEON_AARCH64 */
+#elif defined(mips)
+/* for loongson */
+static uint32_t get_cpu_flags_from_cpuinfo(void)
+{
+    uint32_t flags = 0;
+
+# ifdef __linux__
+    FILE* fp = fopen("/proc/cpuinfo", "r");
+    if (!fp)
+        return flags;
+
+    char buf[200];
+    memset(buf, 0, sizeof(buf));
+    while (fgets(buf, sizeof(buf), fp)) {
+        if (!strncmp(buf, "model name", strlen("model name"))) {
+            if (strstr(buf, "Loongson-3A") || strstr(buf, "Loongson-3B") ||
+                strstr(buf, "Loongson-2K")) {
+                flags |= WELS_CPU_MMI;
+            }
+            break;
+        }
+    }
+    while (fgets(buf, sizeof(buf), fp)) {
+        if(!strncmp(buf, "ASEs implemented", strlen("ASEs implemented"))) {
+            if (strstr(buf, "loongson-mmi") && strstr(buf, "loongson-ext")) {
+                flags |= WELS_CPU_MMI;
+            }
+            if (strstr(buf, "msa")) {
+                flags |= WELS_CPU_MSA;
+            }
+            break;
+        }
+    }
+    fclose(fp);
+# endif
+
+    return flags;
+}
+
+uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
+    return get_cpu_flags_from_cpuinfo();
+}
+
+#else /* Neither X86_ASM, HAVE_NEON, HAVE_NEON_AARCH64 nor mips */
 
 uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
   return 0;
 }
 
 #endif
-
-

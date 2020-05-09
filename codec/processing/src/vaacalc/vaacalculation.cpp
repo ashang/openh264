@@ -64,6 +64,7 @@ void CVAACalculation::InitVaaFuncs (SVaaFuncs& sVaaFuncs, int32_t iCpuFlag) {
     sVaaFuncs.pfVAACalcSadSsdBgd = VAACalcSadSsdBgd_sse2;
     sVaaFuncs.pfVAACalcSadVar    = VAACalcSadVar_sse2;
   }
+#ifdef HAVE_AVX2
   if (iCpuFlag & WELS_CPU_AVX2) {
     sVaaFuncs.pfVAACalcSad       = VAACalcSad_avx2;
     sVaaFuncs.pfVAACalcSadBgd    = VAACalcSadBgd_avx2;
@@ -71,6 +72,7 @@ void CVAACalculation::InitVaaFuncs (SVaaFuncs& sVaaFuncs, int32_t iCpuFlag) {
     sVaaFuncs.pfVAACalcSadSsdBgd = VAACalcSadSsdBgd_avx2;
     sVaaFuncs.pfVAACalcSadVar    = VAACalcSadVar_avx2;
   }
+#endif
 #endif//X86_ASM
 #ifdef HAVE_NEON
   if ((iCpuFlag & WELS_CPU_NEON) == WELS_CPU_NEON) {
@@ -91,6 +93,16 @@ void CVAACalculation::InitVaaFuncs (SVaaFuncs& sVaaFuncs, int32_t iCpuFlag) {
     sVaaFuncs.pfVAACalcSadVar    = VAACalcSadVar_AArch64_neon;
   }
 #endif//HAVE_NEON_AARCH64
+
+#ifdef HAVE_MMI
+  if ((iCpuFlag & WELS_CPU_MMI) == WELS_CPU_MMI) {
+    sVaaFuncs.pfVAACalcSad       = VAACalcSad_mmi;
+    sVaaFuncs.pfVAACalcSadBgd    = VAACalcSadBgd_mmi;
+    sVaaFuncs.pfVAACalcSadSsd    = VAACalcSadSsd_mmi;
+    sVaaFuncs.pfVAACalcSadSsdBgd = VAACalcSadSsdBgd_mmi;
+    sVaaFuncs.pfVAACalcSadVar    = VAACalcSadVar_mmi;
+  }
+#endif//HAVE_MMI
 }
 
 EResult CVAACalculation::Process (int32_t iType, SPixMap* pSrcPixMap, SPixMap* pRefPixMap) {

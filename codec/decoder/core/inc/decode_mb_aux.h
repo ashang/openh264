@@ -48,8 +48,10 @@ extern "C" {
 #if defined(X86_ASM)
 void IdctResAddPred_mmx (uint8_t* pPred, const int32_t kiStride, int16_t* pRs);
 void IdctResAddPred_sse2 (uint8_t* pPred, const int32_t kiStride, int16_t* pRs);
+#if defined(HAVE_AVX2)
 void IdctResAddPred_avx2 (uint8_t* pPred, const int32_t kiStride, int16_t* pRs);
 void IdctFourResAddPred_avx2 (uint8_t* pPred, int32_t iStride, int16_t* pRs, const int8_t* pNzc);
+#endif
 #endif//X86_ASM
 
 #if defined(HAVE_NEON)
@@ -60,6 +62,10 @@ void IdctResAddPred_neon (uint8_t* pred, const int32_t stride, int16_t* rs);
 void IdctResAddPred_AArch64_neon (uint8_t* pred, const int32_t stride, int16_t* rs);
 #endif
 
+
+#if defined(HAVE_MMI)
+void IdctResAddPred_mmi (uint8_t* pPred, const int32_t kiStride, int16_t* pRs);
+#endif//HAVE_MMI
 
 #if defined(__cplusplus)
 }

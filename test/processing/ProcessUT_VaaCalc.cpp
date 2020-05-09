@@ -839,11 +839,13 @@ GENERATE_VAACalcSadSsdBgd_UT (VAACalcSadSsdBgd_sse2, 1, WELS_CPU_SSE2)
 GENERATE_VAACalcSadSsd_UT (VAACalcSadSsd_sse2, 1, WELS_CPU_SSE2)
 GENERATE_VAACalcSadVar_UT (VAACalcSadVar_sse2, 1, WELS_CPU_SSE2)
 
+#if defined(HAVE_AVX2)
 GENERATE_VAACalcSad_UT (VAACalcSad_avx2, 1, WELS_CPU_AVX2)
 GENERATE_VAACalcSadBgd_UT (VAACalcSadBgd_avx2, 1, WELS_CPU_AVX2)
 GENERATE_VAACalcSadSsdBgd_UT (VAACalcSadSsdBgd_avx2, 1, WELS_CPU_AVX2)
 GENERATE_VAACalcSadSsd_UT (VAACalcSadSsd_avx2, 1, WELS_CPU_AVX2)
 GENERATE_VAACalcSadVar_UT (VAACalcSadVar_avx2, 1, WELS_CPU_AVX2)
+#endif //HAVE_AVX2
 #endif
 
 #if defined(HAVE_NEON)
@@ -860,4 +862,12 @@ GENERATE_VAACalcSadBgd_UT (VAACalcSadBgd_AArch64_neon, 1, WELS_CPU_NEON)
 GENERATE_VAACalcSadSsdBgd_UT (VAACalcSadSsdBgd_AArch64_neon, 1, WELS_CPU_NEON)
 GENERATE_VAACalcSadSsd_UT (VAACalcSadSsd_AArch64_neon, 1, WELS_CPU_NEON)
 GENERATE_VAACalcSadVar_UT (VAACalcSadVar_AArch64_neon, 1, WELS_CPU_NEON)
+#endif
+
+#if defined(HAVE_MMI)
+GENERATE_VAACalcSad_UT (VAACalcSad_mmi, 1, WELS_CPU_MMI)
+GENERATE_VAACalcSadBgd_UT (VAACalcSadBgd_mmi, 1, WELS_CPU_MMI)
+GENERATE_VAACalcSadSsdBgd_UT (VAACalcSadSsdBgd_mmi, 1, WELS_CPU_MMI)
+GENERATE_VAACalcSadSsd_UT (VAACalcSadSsd_mmi, 1, WELS_CPU_MMI)
+GENERATE_VAACalcSadVar_UT (VAACalcSadVar_mmi, 1, WELS_CPU_MMI)
 #endif

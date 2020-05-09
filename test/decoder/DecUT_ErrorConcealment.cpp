@@ -21,11 +21,13 @@ typedef struct TagECInputCtx {
   SPicture sAncPic; //Anc picture for comparison
   SPicture sSrcPic; //Src picture as common input picture data
   SPicture sWelsPic; //Wels picture to be compared
+  SWelsLastDecPicInfo sLastDecPicInfo;
 } SECInputCtx, *PECInputCtx;
 
 void FreeInputData (PECInputCtx pECCtx) {
   if (pECCtx != NULL) {
     if (pECCtx->pCtx != NULL) {
+      WELS_SAFE_FREE (pECCtx->pCtx->pParam, "pECCtx->pCtx->pParam");
       WELS_SAFE_FREE (pECCtx->pCtx->pSps, "pECCtx->pCtx->pSps");
       WELS_SAFE_FREE (pECCtx->pCtx, "pECCtx->pCtx");
     }
@@ -89,12 +91,15 @@ int32_t InitAndAllocInputData (PECInputCtx& pECCtx) {
   pECCtx->pCtx->pDec = &pECCtx->sWelsPic;
   pECCtx->pCtx->pCurDqLayer = &pECCtx->sDqLayer;
   pECCtx->pCtx->pCurDqLayer->pMbCorrectlyDecodedFlag = pECCtx->pMbCorrectlyDecodedFlag;
-
+  pECCtx->pCtx->pLastDecPicInfo = &pECCtx->sLastDecPicInfo;
   pECCtx->pCtx->pSps = (PSps) WelsMallocz (sizeof (SSps), "pECCtx->pCtx->pSps");
   if (pECCtx->pCtx->pSps == NULL)
     return 1;
   pECCtx->pCtx->pSps->iMbWidth = pECCtx->iMbWidth;
   pECCtx->pCtx->pSps->iMbHeight = pECCtx->iMbHeight;
+  pECCtx->pCtx->pParam = (PDecodingParam) WelsMallocz (sizeof (SDecodingParam), "pECCtx->pCtx->pParam");
+  if (pECCtx->pCtx->pParam == NULL)
+    return 1;
 
   return 0;
 }
@@ -120,8 +125,8 @@ void DoAncErrorConSliceCopy (PECInputCtx pECCtx) {
   int32_t iMbWidth = (int32_t) pECCtx->iMbWidth;
   int32_t iMbHeight = (int32_t) pECCtx->iMbHeight;
   PPicture pDstPic = &pECCtx->sAncPic;
-  PPicture pSrcPic = pECCtx->pCtx->pPreviousDecodedPictureInDpb;
-  if ((pECCtx->pCtx->eErrorConMethod == ERROR_CON_SLICE_COPY)
+  PPicture pSrcPic = pECCtx->pCtx->pLastDecPicInfo->pPreviousDecodedPictureInDpb;
+  if ((pECCtx->pCtx->pParam->eEcActiveIdc == ERROR_CON_SLICE_COPY)
       && (pECCtx->pCtx->pCurDqLayer->sLayerInfo.sNalHeaderExt.bIdrFlag))
     pSrcPic = NULL;
 
@@ -235,18 +240,18 @@ TEST (ErrorConTest, DoErrorConFrameCopy) {
   }
 
   for (int iEC = 0; iEC < 2; ++ iEC) { //ERROR_CON_FRAME_COPY, ERROR_CON_FRAME_COPY_CROSS_IDR
-    pECCtx->pCtx->eErrorConMethod = iEC > 0 ? ERROR_CON_FRAME_COPY_CROSS_IDR : ERROR_CON_FRAME_COPY;
+    pECCtx->pCtx->pParam->eEcActiveIdc = iEC > 0 ? ERROR_CON_FRAME_COPY_CROSS_IDR : ERROR_CON_FRAME_COPY;
     InitECCopyData (pECCtx);
     int32_t iLumaSize = pECCtx->iMbWidth * pECCtx->iMbHeight * 256;
 
     for (int iRef = 0; iRef < 2; ++ iRef) { //no ref, with ref
-      pECCtx->pCtx->pPreviousDecodedPictureInDpb = iRef ? &pECCtx->sSrcPic : NULL;
+      pECCtx->pCtx->pLastDecPicInfo->pPreviousDecodedPictureInDpb = iRef ? &pECCtx->sSrcPic : NULL;
       for (int iIDR = 0; iIDR < 2; ++ iIDR) { //non IDR, IDR
         pECCtx->pCtx->pCurDqLayer->sLayerInfo.sNalHeaderExt.bIdrFlag = (iIDR > 0);
         //Do reference code method
         DoErrorConFrameCopy (pECCtx->pCtx);
         //Do anchor method
-        if (iRef && ! ((pECCtx->pCtx->eErrorConMethod == ERROR_CON_FRAME_COPY)
+        if (iRef && ! ((pECCtx->pCtx->pParam->eEcActiveIdc == ERROR_CON_FRAME_COPY)
                        && (pECCtx->pCtx->pCurDqLayer->sLayerInfo.sNalHeaderExt.bIdrFlag)))
           memcpy (pECCtx->sAncPic.pData[0], pECCtx->sSrcPic.pData[0], iLumaSize * 3 / 2);
         else
@@ -272,10 +277,10 @@ TEST (ErrorConTest, DoErrorConSliceCopy) {
   }
 
   for (int iEC = 0; iEC < 2; ++ iEC) { //ERROR_CON_SLICE_COPY, ERROR_CON_SLICE_COPY_CROSS_IDR
-    pECCtx->pCtx->eErrorConMethod = iEC > 0 ? ERROR_CON_SLICE_COPY_CROSS_IDR : ERROR_CON_SLICE_COPY;
+    pECCtx->pCtx->pParam->eEcActiveIdc = iEC > 0 ? ERROR_CON_SLICE_COPY_CROSS_IDR : ERROR_CON_SLICE_COPY;
     InitECCopyData (pECCtx);
     for (int iRef = 0; iRef < 2; ++ iRef) { //no ref, with ref
-      pECCtx->pCtx->pPreviousDecodedPictureInDpb = iRef ? &pECCtx->sSrcPic : NULL;
+      pECCtx->pCtx->pLastDecPicInfo->pPreviousDecodedPictureInDpb = iRef ? &pECCtx->sSrcPic : NULL;
       for (int iIDR = 0; iIDR < 2; ++ iIDR) { //non IDR, IDR
         pECCtx->pCtx->pCurDqLayer->sLayerInfo.sNalHeaderExt.bIdrFlag = (iIDR > 0);
         //Do reference code method

@@ -58,7 +58,7 @@ class CWelsThread {
   virtual void ExecuteTask() = 0;
   virtual WELS_THREAD_ERROR_CODE Start();
   virtual void Kill();
-
+  WELS_MUTEX          m_hMutex;
  protected:
   static WELS_THREAD_ROUTINE_TYPE  TheThread (void* pParam);
 
@@ -82,7 +82,7 @@ class CWelsThread {
   }
 
   void SignalThread() {
-    WelsEventSignal (&m_hEvent);
+    WelsEventSignal (&m_hEvent, &m_hMutex, &m_iConVar);
   }
 
  private:
@@ -91,6 +91,7 @@ class CWelsThread {
   CWelsLock           m_cLockStatus;
   bool                m_bRunning;
   bool                m_bEndFlag;
+  int                 m_iConVar;
 
   DISALLOW_COPY_AND_ASSIGN (CWelsThread);
 };
